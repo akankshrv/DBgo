@@ -3,6 +3,7 @@ package dbgo
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
 
@@ -10,8 +11,10 @@ const (
 	defaultDBName = "default"
 )
 
+type M map[string]string
+
 type Collection struct {
-	bucket *bbolt.Bucket
+	*bbolt.Bucket
 }
 type Dbgo struct {
 	db *bbolt.DB
@@ -28,33 +31,45 @@ func New() (*Dbgo, error) {
 	}, nil
 }
 
-func (h *Dbgo) CreateCollectio(name string) (*Collection, error) {
-	coll := Collection{}
-	err := h.db.Update(func(tx *bbolt.Tx) error {
-		bucket, err := tx.CreateBucket([]byte(name))
-		if err != nil {
-			return err
-		}
-		coll.bucket = bucket
-		return nil
-	})
+func (h *Dbgo) CreateCollection(name string) (*Collection, error) {
+	tx, err := h.db.Begin(true)
 	if err != nil {
 		return nil, err
 	}
-	return &coll, nil
+	defer tx.Rollback()
+
+	bucket, err := tx.CreateBucketIfNotExists([]byte(name))
+	if err != nil {
+		return nil, err
+	}
+	return &Collection{Bucket: bucket}, nil
 }
 
-// db.Update(func(tx *bbolt.Tx) error {
+func (h *Dbgo) Insert(collName string, data M) (uuid.UUID, error) {
+	id := uuid.New()
+	tx, err := h.db.Begin(true)
+	if err != nil {
+		return id, err
+	}
+	defer tx.Rollback()
 
-// 		id := uuid.New()
-// 		for k, v := range user {
-// 			if err := bucket.Put([]byte(k), []byte(v)); err != nil {
-// 				return err
-// 			}
-// 		}
-// 		if err := bucket.Put([]byte("id"), []byte(id.String())); err != nil {
-// 			return err
-// 		}
+	bucket, err := tx.CreateBucketIfNotExists([]byte(collName))
+	if err != nil {
+		return id, err
+	}
+	for k, v := range data {
+		if err := bucket.Put([]byte(k), []byte(v)); err != nil {
+			return id, err
+		}
+	}
+	if err := bucket.Put([]byte("id"), []byte(id.String())); err != nil {
+		return id, err
+	}
 
-// 		return nil
-// 	})
+	return id, nil
+
+}
+
+func (h *Dbgo) Select(coll string, k string, query any) {
+
+}

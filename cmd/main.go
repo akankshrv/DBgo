@@ -9,19 +9,22 @@ import (
 
 func main() {
 
-	user := map[string]string{
-		"name": "Akanksh",
-		"age":  "22",
-	}
-	_ = user
 	db, err := dbgo.New()
 	if err != nil {
 		log.Fatal(err)
 	}
-	coll, err := db.CreateCollectio("users")
+	user := map[string]string{
+		"name": "Akanksh",
+		"age":  "22",
+	}
+	id, err := db.Insert("users", user)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", coll)
+	// coll, err := db.CreateCollectio("users")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	fmt.Printf("%+v\n", id)
 
 }
