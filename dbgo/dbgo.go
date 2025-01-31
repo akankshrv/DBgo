@@ -46,6 +46,7 @@ func (h *Dbgo) CreateCollection(name string) (*Collection, error) {
 }
 
 func (h *Dbgo) Insert(collName string, data M) (uuid.UUID, error) {
+
 	id := uuid.New()
 	tx, err := h.db.Begin(true)
 	if err != nil {
@@ -66,10 +67,19 @@ func (h *Dbgo) Insert(collName string, data M) (uuid.UUID, error) {
 		return id, err
 	}
 
-	return id, nil
+	return id, tx.Commit()
 
 }
 
-func (h *Dbgo) Select(coll string, k string, query any) {
+// get http://localhost:4000/users?eq.name={akanksh}
+func (h *Dbgo) Select(coll string, k string, query any) (M, error) {
+	tx, err := h.db.Begin(false)
+	if err != nil {
+		return nil, err
+	}
+	bucket := tx.Bucket([]byte(coll))
+	if bucket == nil {
+		return nil, fmt.Errorf("collection (%s) not found", coll)
+	}
 
 }
