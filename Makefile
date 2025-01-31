@@ -1,5 +1,7 @@
 build:
-	go build -o bin/Dbgo
+	@go build -o bin/Dbgo cmd/main.go
 
 run: build
-	./bin/Dbgo
+	@./bin/Dbgo
+test:
+	@go test -v ./...
