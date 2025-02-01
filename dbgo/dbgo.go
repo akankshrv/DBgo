@@ -3,7 +3,6 @@ package dbgo
 import (
 	"fmt"
 
-	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
 
@@ -45,25 +44,28 @@ func (h *Dbgo) CreateCollection(name string) (*Collection, error) {
 	return &Collection{Bucket: bucket}, nil
 }
 
-func (h *Dbgo) Insert(collName string, data M) (uuid.UUID, error) {
+func (h *Dbgo) Insert(collName string, data M) (uint64, error) {
 
-	id := uuid.New()
 	tx, err := h.db.Begin(true)
 	if err != nil {
-		return id, err
+		return 0, err
 	}
 	defer tx.Rollback()
 
 	bucket, err := tx.CreateBucketIfNotExists([]byte(collName))
 	if err != nil {
-		return id, err
+		return 0, err
+	}
+	id, err := bucket.NextSequence()
+	if err != nil {
+		return 0, err
 	}
 	for k, v := range data {
 		if err := bucket.Put([]byte(k), []byte(v)); err != nil {
 			return id, err
 		}
 	}
-	if err := bucket.Put([]byte("id"), []byte(id.String())); err != nil {
+	if err := bucket.Put([]byte("id"), uint64toBytes(id)); err != nil {
 		return id, err
 	}
 
@@ -72,14 +74,14 @@ func (h *Dbgo) Insert(collName string, data M) (uuid.UUID, error) {
 }
 
 // get http://localhost:4000/users?eq.name={akanksh}
-func (h *Dbgo) Select(coll string, k string, query any) (M, error) {
-	tx, err := h.db.Begin(false)
-	if err != nil {
-		return nil, err
-	}
-	bucket := tx.Bucket([]byte(coll))
-	if bucket == nil {
-		return nil, fmt.Errorf("collection (%s) not found", coll)
-	}
+// func (h *Dbgo) Select(coll string, k string, query any) (M, error) {
+// 	tx, err := h.db.Begin(false)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	bucket := tx.Bucket([]byte(coll))
+// 	if bucket == nil {
+// 		return nil, fmt.Errorf("collection (%s) not found", coll)
+// 	}
 
-}
+// }
