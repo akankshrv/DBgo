@@ -33,8 +33,8 @@ type Filter struct {
 	dbgo        *Dbgo
 	coll        string
 	compFilters []compFilter
-	slct        []string
-	limit       int
+	// slct        []string
+	// limit       int
 }
 
 func NewFilters(db *Dbgo, coll string) *Filter {
@@ -72,14 +72,14 @@ func (f *Filter) Insert(values Map) (uint64, error) {
 
 }
 
-// func (h *Dbgo) Find(coll string, k string, query any) (M, error) {
-// 	tx, err := h.db.Begin(true)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	bucket := tx.Bucket([]byte(coll))
-// 	if bucket == nil {
-// 		return nil, fmt.Errorf("collection (%s) not found", coll)
-// 	}
-// 	records, err :=
-// }
+// func (f *Filter) Find()
+
+// func (f *Filter) Update()
+
+// func (f *Filter) Delete()
+
+// func (f *Filter) Gt()
+
+// func (f *Filter) Lt()
+
+// func (f *Filter) In()
