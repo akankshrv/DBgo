@@ -40,9 +40,12 @@ func (f compFilter) apply(record Map) bool {
 			return false // If key is missing in record
 		}
 		if k == "id" {
-			return f.comp(value, uint64(v.(int)))
+			if !f.comp(value, uint64(v.(int))) {
+				return false
+			}
+		} else {
+			return f.comp(value, v)
 		}
-		return f.comp(value, v)
 	}
 	return true
 }
@@ -125,12 +128,12 @@ func (f *Filter) View() error {
 	}
 	defer tx.Rollback()
 
-	bucket := tx.Bucket([]byte(f.coll))
-	if bucket == nil {
+	collbucket := tx.Bucket([]byte(f.coll))
+	if collbucket == nil {
 		return fmt.Errorf("collection (%s) not found", f.coll)
 	}
 	fmt.Printf("Records in collection '%s':\n", f.coll)
-	err = bucket.ForEach(func(k, v []byte) error {
+	err = collbucket.ForEach(func(k, v []byte) error {
 		record := Map{
 			"id": uint64FromBytes(k),
 		}
@@ -151,18 +154,52 @@ func (f *Filter) Find() ([]Map, error) {
 	if err != nil {
 		return nil, err
 	}
-	bucket := tx.Bucket([]byte(f.coll))
-	if bucket == nil {
+	collbucket := tx.Bucket([]byte(f.coll))
+	if collbucket == nil {
 		return nil, fmt.Errorf("bucket [%s] is not found", f.coll)
 	}
-	records, err := f.findin(bucket)
+	records, err := f.findin(collbucket)
 	if err != nil {
 		return nil, err
 	}
 	return records, tx.Commit()
 }
 
-// func (f *Filter) Update()
+func (f *Filter) Update(values Map) ([]Map, error) {
+	tx, err := f.dbgo.db.Begin(true)
+	if err != nil {
+		return nil, err
+	}
+	collbucket := tx.Bucket([]byte(f.coll))
+	if collbucket == nil {
+		return nil, fmt.Errorf("bucket [%s] is not present", f.coll)
+	}
+	records, err := f.findin(collbucket)
+	if err != nil {
+		return nil, err
+	}
+	for _, record := range records {
+		for k, v := range values {
+			if _, ok := record[k]; ok {
+				record[k] = v
+			}
+		}
+		idFloat, ok := record["id"].(float64)
+		if !ok {
+			return nil, fmt.Errorf("error in conversion")
+		}
+		id := uint64(idFloat)
+		b, err := f.dbgo.Encoder.Encode(record)
+		if err != nil {
+			return nil, err
+
+		}
+		if err := collbucket.Put(uint64toBytes(id), b); err != nil {
+			return nil, err
+		}
+	}
+	return records, tx.Commit()
+}
 
 // func (f *Filter) Delete()
 

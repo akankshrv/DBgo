@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/akankshrv/DBgo/dbgo"
@@ -23,10 +24,13 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 	// fmt.Printf("%+v\n", id)
-	// results, err := filter.Eq(dbgo.Map{"age": float64(30)}).Select("name").Find()
+	results, err := filter.Eq(dbgo.Map{"name": "Akanksh"}).Select("age").Find()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// results, err := filter.Eq(dbgo.Map{"age": float64(13)}).Update(dbgo.Map{"age": 19})
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
-	filter.View()
-
+	fmt.Println(results)
 }
