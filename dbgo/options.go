@@ -7,3 +7,10 @@ type Options struct {
 	Encoder DataEncoder
 	Decoder DataDecoder
 }
+
+// custom DB name
+func WithDBName(name string) Optfunc {
+	return func(o *Options) {
+		o.DBName = name
+	}
+}

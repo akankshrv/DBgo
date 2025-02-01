@@ -2,6 +2,7 @@ package dbgo
 
 import (
 	"fmt"
+	"os"
 
 	"go.etcd.io/bbolt"
 )
@@ -41,6 +42,10 @@ func New(options ...Optfunc) (*Dbgo, error) {
 	}, nil
 }
 
+func (h *Dbgo) DropDatabase(name string) error {
+	dbname := fmt.Sprintf("%s.%s", name, extension)
+	return os.Remove(dbname)
+}
 func (h *Dbgo) CreateCollection(name string) (*bbolt.Bucket, error) {
 	tx, err := h.db.Begin(true)
 	if err != nil {
