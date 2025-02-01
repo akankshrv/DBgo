@@ -55,7 +55,7 @@ type Filter struct {
 	coll        string
 	compFilters []compFilter
 	slct        []string
-	// limit       int
+	limit       int
 }
 
 func NewFilters(db *Dbgo, coll string) *Filter {
@@ -227,6 +227,11 @@ func (f *Filter) Delete() error {
 	}
 	return tx.Commit()
 
+}
+
+func (f *Filter) Limit(n int) *Filter {
+	f.limit = n
+	return f
 }
 
 func (f *Filter) Select(values ...string) *Filter {
