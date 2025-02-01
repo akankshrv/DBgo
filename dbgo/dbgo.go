@@ -8,29 +8,40 @@ import (
 
 const (
 	defaultDBName = "default"
+	extension     = "dbgo"
 )
 
-type M map[string]string
+type Map map[string]any
 
-type Collection struct {
-	*bbolt.Bucket
-}
 type Dbgo struct {
+	currentDatabase string
+	*Options
 	db *bbolt.DB
 }
 
-func New() (*Dbgo, error) {
-	dbname := fmt.Sprintf("%s.Dbgo", defaultDBName)
+func New(options ...Optfunc) (*Dbgo, error) {
+	opts := &Options{
+		Encoder: JSONEncoder{},
+		Decoder: JSONDecoder{},
+		DBName:  defaultDBName,
+	}
+	for _, fn := range options {
+		fn(opts)
+	}
+
+	dbname := fmt.Sprintf("%s.%s", opts.DBName, extension)
 	db, err := bbolt.Open(dbname, 0666, nil)
 	if err != nil {
 		return nil, err
 	}
 	return &Dbgo{
-		db: db,
+		currentDatabase: dbname,
+		db:              db,
+		Options:         opts,
 	}, nil
 }
 
-func (h *Dbgo) CreateCollection(name string) (*Collection, error) {
+func (h *Dbgo) CreateCollection(name string) (*bbolt.Bucket, error) {
 	tx, err := h.db.Begin(true)
 	if err != nil {
 		return nil, err
@@ -41,47 +52,5 @@ func (h *Dbgo) CreateCollection(name string) (*Collection, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Collection{Bucket: bucket}, nil
+	return bucket, nil
 }
-
-func (h *Dbgo) Insert(collName string, data M) (uint64, error) {
-
-	tx, err := h.db.Begin(true)
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Rollback()
-
-	bucket, err := tx.CreateBucketIfNotExists([]byte(collName))
-	if err != nil {
-		return 0, err
-	}
-	id, err := bucket.NextSequence()
-	if err != nil {
-		return 0, err
-	}
-	for k, v := range data {
-		if err := bucket.Put([]byte(k), []byte(v)); err != nil {
-			return id, err
-		}
-	}
-	if err := bucket.Put([]byte("id"), uint64toBytes(id)); err != nil {
-		return id, err
-	}
-
-	return id, tx.Commit()
-
-}
-
-// get http://localhost:4000/users?eq.name={akanksh}
-// func (h *Dbgo) Select(coll string, k string, query any) (M, error) {
-// 	tx, err := h.db.Begin(false)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	bucket := tx.Bucket([]byte(coll))
-// 	if bucket == nil {
-// 		return nil, fmt.Errorf("collection (%s) not found", coll)
-// 	}
-
-// }
