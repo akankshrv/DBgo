@@ -1,0 +1,6 @@
+DBGo – A Lightweight NoSQL Database Built on bbolt
+Designed and implemented a NoSQL database system using Go’s bbolt library.
+Added support for query-like features (e.g., filtering with conditions such as equality checks) to extend the functionality of the raw key-value store.
+Built high-level CRUD APIs (Insert, Find, Update, Delete) to simplify user interaction with the database.
+Implemented transaction management, custom encoders/decoders for structured data storage (e.g., JSON), and multi-condition filtering.
+Optimized for embedded use cases requiring lightweight persistence without the need for external database servers.

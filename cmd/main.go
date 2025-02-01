@@ -24,7 +24,7 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 	// fmt.Printf("%+v\n", id)
-	results, err := filter.Eq(dbgo.Map{"name": "Akanksh"}).Select("age").Find()
+	results, err := filter.Lt(dbgo.Map{"age": float64(20)}).Select("name").Find()
 	if err != nil {
 		log.Fatal(err)
 	}
