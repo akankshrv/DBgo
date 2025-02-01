@@ -9,11 +9,21 @@ import (
 
 const (
 	FilterTypeEQ = "eq"
+	FilterTypeGT = "gt"
+	FilterTypeLT = "lt"
 )
 
-// func eq(a, b any) bool {
-// 	return a == b
-// }
+func eq(a, b any) bool {
+	return a == b
+}
+
+func gt(a, b any) bool {
+	return a.(float64) > b.(float64)
+}
+
+func lt(a, b any) bool {
+	return a.(float64) < b.(float64)
+}
 
 type comparison func(a, b any) bool
 
@@ -26,6 +36,7 @@ func (f compFilter) apply(record Map) bool {
 	for k, v := range f.kvs {
 		value, ok := record[k]
 		if !ok {
+			fmt.Printf("Key '%s' missing in record %+v\n", k, record)
 			return false // If key is missing in record
 		}
 		if k == "id" {
@@ -40,7 +51,7 @@ type Filter struct {
 	dbgo        *Dbgo
 	coll        string
 	compFilters []compFilter
-	Slct        []string
+	slct        []string
 	// limit       int
 }
 
@@ -50,6 +61,31 @@ func NewFilters(db *Dbgo, coll string) *Filter {
 		coll:        coll,
 		compFilters: make([]compFilter, 0),
 	}
+}
+
+func (f *Filter) Eq(values Map) *Filter {
+	filt := compFilter{
+		comp: eq,
+		kvs:  values,
+	}
+	f.compFilters = append(f.compFilters, filt)
+	return f
+}
+func (f *Filter) Gt(values Map) *Filter {
+	filt := compFilter{
+		comp: gt,
+		kvs:  values,
+	}
+	f.compFilters = append(f.compFilters, filt)
+	return f
+}
+func (f *Filter) Lt(values Map) *Filter {
+	filt := compFilter{
+		comp: lt,
+		kvs:  values,
+	}
+	f.compFilters = append(f.compFilters, filt)
+	return f
 }
 
 func (f *Filter) Insert(values Map) (uint64, error) {
@@ -82,8 +118,35 @@ func (f *Filter) Insert(values Map) (uint64, error) {
 	return id, nil
 
 }
+func (f *Filter) View() error {
+	tx, err := f.dbgo.db.Begin(false)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	bucket := tx.Bucket([]byte(f.coll))
+	if bucket == nil {
+		return fmt.Errorf("collection (%s) not found", f.coll)
+	}
+	fmt.Printf("Records in collection '%s':\n", f.coll)
+	err = bucket.ForEach(func(k, v []byte) error {
+		record := Map{
+			"id": uint64FromBytes(k),
+		}
+		if err := f.dbgo.Decoder.Decode(v, &record); err != nil {
+			return err
+		}
+
+		fmt.Printf("Key: %d, Value: %+v\n", uint64FromBytes(k), record)
+		return nil
+	})
+
+	return err
+}
 
 func (f *Filter) Find() ([]Map, error) {
+
 	tx, err := f.dbgo.db.Begin(true)
 	if err != nil {
 		return nil, err
@@ -96,7 +159,6 @@ func (f *Filter) Find() ([]Map, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("records", records)
 	return records, tx.Commit()
 }
 
@@ -104,19 +166,21 @@ func (f *Filter) Find() ([]Map, error) {
 
 // func (f *Filter) Delete()
 
-//	func (f *Filter) Select(values ...string) *Filter {
-//		f.slct = append(f.slct, values...)
-//		return f
-//	}
+func (f *Filter) Select(values ...string) *Filter {
+	f.slct = append(f.slct, values...)
+	return f
+}
 func (f *Filter) findin(b *bbolt.Bucket) ([]Map, error) {
+
 	response := []Map{}
 	b.ForEach(func(k, v []byte) error {
 		record := Map{
 			"id": uint64FromBytes(k),
 		}
-		if err := f.dbgo.Decoder.Decode(v, &response); err != nil {
+		if err := f.dbgo.Decoder.Decode(v, &record); err != nil {
 			return err
 		}
+
 		include := true
 		for _, filter := range f.compFilters {
 			if !filter.apply(record) {
@@ -135,11 +199,11 @@ func (f *Filter) findin(b *bbolt.Bucket) ([]Map, error) {
 	return response, nil
 }
 func (f *Filter) applySelect(record Map) Map {
-	if len(f.Slct) == 0 {
+	if len(f.slct) == 0 {
 		return record
 	}
 	data := Map{}
-	for _, key := range f.Slct {
+	for _, key := range f.slct {
 		if _, ok := record[key]; ok {
 			data[key] = record[key]
 		}
@@ -149,5 +213,5 @@ func (f *Filter) applySelect(record Map) Map {
 
 // This is how data is stored in  Dbgo
 // | id(key) | value|
-// | 1       | `{"name":"Akanksh","age":23}` |
-// | 2       | `{"name":"John","age":25}` |
+// | 1       | `{"name":"Akanksh","id":1,"age":23}` |
+// | 2       | `{"name":"John","id":2,"age":25}` |
