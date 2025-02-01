@@ -201,7 +201,33 @@ func (f *Filter) Update(values Map) ([]Map, error) {
 	return records, tx.Commit()
 }
 
-// func (f *Filter) Delete()
+func (f *Filter) Delete() error {
+	tx, err := f.dbgo.db.Begin(true)
+	if err != nil {
+		return err
+	}
+	collbucket := tx.Bucket([]byte(f.coll))
+	if collbucket == nil {
+		return fmt.Errorf("bucket [%s] is not present", f.coll)
+	}
+	records, err := f.findin(collbucket)
+	if err != nil {
+		return err
+	}
+	for _, r := range records {
+		idFloat, ok := r["id"].(float64)
+		if !ok {
+			return fmt.Errorf("record id is not a valid uint64: %v", r["id"])
+		}
+		id := uint64(idFloat)
+		idbytes := uint64toBytes(id)
+		if err := collbucket.Delete(idbytes); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+
+}
 
 func (f *Filter) Select(values ...string) *Filter {
 	f.slct = append(f.slct, values...)
