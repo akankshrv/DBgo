@@ -55,6 +55,7 @@ type Filter struct {
 	coll        string
 	compFilters []compFilter
 	slct        []string
+	offset      int
 	limit       int
 }
 
@@ -231,6 +232,11 @@ func (f *Filter) Delete() error {
 
 func (f *Filter) Limit(n int) *Filter {
 	f.limit = n
+	return f
+}
+
+func (f *Filter) Offset(n int) *Filter {
+	f.offset = n
 	return f
 }
 
