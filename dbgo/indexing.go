@@ -30,7 +30,7 @@ func (h *Dbgo) CreateIndex(index Index) error {
 	return tx.Commit()
 }
 
-func (h *Dbgo) UpdateIndex(index Index, record Map) error {
+func (h *Dbgo) UpdateOnIndex(index Index, record Map) error {
 	tx, err := h.db.Begin(true)
 	if err != nil {
 		return err

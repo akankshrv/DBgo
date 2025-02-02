@@ -69,7 +69,7 @@ func main() {
 		}
 		fmt.Printf("Inserted record with ID: %d\n", id)
 
-		err = db.UpdateIndex(dbgo.Index{Collection: "testcoll", Field: "age"}, user)
+		err = db.UpdateOnIndex(dbgo.Index{Collection: "testcoll", Field: "age"}, user)
 		if err != nil {
 			log.Fatalf("Failed to update index for record: %v", err)
 		}

@@ -45,7 +45,7 @@ func TestUpdateIndex(t *testing.T) {
 	}
 
 	record := Map{"id": float64(1), "name": "Ak", "age": 25}
-	if err = db.UpdateIndex(Index{Collection: "testcoll", Field: "age"}, record); err != nil {
+	if err = db.UpdateOnIndex(Index{Collection: "testcoll", Field: "age"}, record); err != nil {
 		t.Fatalf("Failed to update index: %v", err)
 	}
 
