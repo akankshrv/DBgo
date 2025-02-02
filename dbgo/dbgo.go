@@ -46,16 +46,17 @@ func (h *Dbgo) DropDatabase(name string) error {
 	dbname := fmt.Sprintf("%s.%s", name, extension)
 	return os.Remove(dbname)
 }
-func (h *Dbgo) CreateCollection(name string) (*bbolt.Bucket, error) {
+func (h *Dbgo) CreateCollection(name string, indexes ...string) error {
 	tx, err := h.db.Begin(true)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer tx.Rollback()
 
-	bucket, err := tx.CreateBucketIfNotExists([]byte(name))
+	_, err = tx.CreateBucketIfNotExists([]byte(name))
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return bucket, nil
+
+	return tx.Commit()
 }
